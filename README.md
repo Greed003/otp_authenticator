@@ -32,11 +32,11 @@ pip install flask python-dotenv pyotp twilio
 
 ### 3. Configure email settings
 
-Edit .env file with your email credentials:
-SENDER_EMAIL = 'your.email@gmail.com'
-SENDER_PASSWORD = 'your_password_or_app_specific_password'
-TWILIO_ACCOUNT_SID='your twilio account sid'
-TWILIO_AUTH_TOKEN='your twilio authentication token'
+Edit .env file with your email credentials: /
+SENDER_EMAIL = 'your.email@gmail.com' /
+SENDER_PASSWORD = 'your_password_or_app_specific_password' /
+TWILIO_ACCOUNT_SID='your twilio account sid' /
+TWILIO_AUTH_TOKEN='your twilio authentication token' /
 TWILIO_VERIFY_SID='your twilio verify sid'
 
 ### 4. Run the application
