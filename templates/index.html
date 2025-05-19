@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OTP Authenticator</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <style>
+  </style>
+</head>
+<body>
+
+  <!-- Welcome Screen -->
+  <div class="container active" id="welcomeScreen">
+    <h1>Welcome 👋</h1>
+    <p>Secure your login with our easy OTP authenticator</p>
+    <button class="btn" onclick="goToRegister()">Get Started</button>
+    <button class="btn secondary" onclick="goToLogin()">Login</button>
+  </div>
+
+  <!-- Registration Screen -->
+  <div class="container" id="registerScreen">
+    <button class="back-btn" onclick="goToWelcome()">← Back</button>
+    <h1>Create Account</h1>
+    <p>Please fill in your details to create an account</p>
+    
+    <div class="form-group">
+      <label for="registerName">Full Name</label>
+      <input type="text" id="registerName" placeholder="Enter your full name" />
+    </div>
+    
+    <div class="form-group">
+      <label for="registerEmail">Email Address</label>
+      <input type="email" id="registerEmail" placeholder="Enter your email" />
+    </div>
+    
+    <div class="form-group">
+      <label for="registerPhone">Phone Number</label>
+      <input type="tel" id="registerPhone" placeholder="Enter your phone number" />
+    </div>
+    
+    <div class="form-group">
+      <label for="registerPassword">Password</label>
+      <div class="password-container">
+        <input type="password" id="registerPassword" placeholder="Create a password" />
+        <span class="toggle-password" onclick="togglePassword('registerPassword')">👁️</span>
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label for="registerConfirmPassword">Confirm Password</label>
+      <div class="password-container">
+        <input type="password" id="registerConfirmPassword" placeholder="Confirm your password" />
+        <span class="toggle-password" onclick="togglePassword('registerConfirmPassword')">👁️</span>
+      </div>
+    </div>
+    
+    <button class="btn" onclick="registerUser()">Register</button>
+    <p class="error-msg hidden" id="registerError"></p>
+  </div>
+
+  <!-- Login Screen -->
+  <div class="container" id="loginScreen">
+    <button class="back-btn" onclick="goToWelcome()">← Back</button>
+    <h1>Login</h1>
+    <p>Enter your credentials to login</p>
+    
+    <div class="form-group">
+      <label for="loginEmail">Email Address</label>
+      <input type="email" id="loginEmail" placeholder="Enter your email" />
+    </div>
+    
+    <div class="form-group">
+      <label for="loginPassword">Password</label>
+      <div class="password-container">
+        <input type="password" id="loginPassword" placeholder="Enter your password" />
+        <span class="toggle-password" onclick="togglePassword('loginPassword')">👁️</span>
+      </div>
+    </div>
+    
+    <button class="btn" onclick="loginUser()">Login</button>
+    <button class="btn secondary" onclick="goToEmail()">Forgot Password?</button>
+    <p class="error-msg hidden" id="loginError"></p>
+  </div>
+
+  <!-- Verification Method Selection Screen -->
+  <div class="container" id="verificationMethodScreen">
+    <button class="back-btn" onclick="goBackFromVerification()">← Back</button>
+    <h1>Verify Your Identity</h1>
+    <p>Choose how you'd like to receive your verification code</p>
+    
+    <div class="verification-methods">
+      <div class="verification-method" onclick="selectVerificationMethod('email')">
+        <div class="verification-icon">📧</div>
+        <div>
+          <h3>Email Verification</h3>
+          <p>Send code to your email address</p>
+          <p class="small-text" id="emailVerificationText"></p>
+        </div>
+      </div>
+      
+      <div class="verification-method" onclick="selectVerificationMethod('phone')">
+        <div class="verification-icon">📱</div>
+        <div>
+          <h3>Phone Verification</h3>
+          <p>Send code via SMS to your phone</p>
+          <p class="small-text" id="phoneVerificationText"></p>
+        </div>
+      </div>
+    </div>
+    
+    <button class="btn" id="proceedVerificationBtn" onclick="proceedWithVerification()" disabled>Continue</button>
+  </div>
+
+  <!-- Email OTP Screen -->
+  <div class="container" id="emailOtpScreen">
+    <button class="back-btn" onclick="goToVerificationMethod()">← Back</button>
+    <h1>Email Verification</h1>
+    <p>We've sent a 6-digit code to <strong id="emailDisplay"></strong></p>
+    <div class="otp-input" id="emailOtpInputs">
+      <input maxlength="1" />
+      <input maxlength="1" />
+      <input maxlength="1" />
+      <input maxlength="1" />
+      <input maxlength="1" />
+      <input maxlength="1" />
+    </div>
+    <p class="resend hidden">
+      Resend OTP in <span id="emailTimer">30</span>s
+    </p>
+    <button class="btn" onclick="verifyEmailOtp()">Verify</button>
+    <button class="btn hidden" id="resendEmailOtpBtn" onclick="resendEmailOtp()">Resend OTP</button>
+    <p class="error-msg hidden" id="emailOtpError">Incorrect OTP, please try again.</p>
+    <button class="btn" id="totp" onclick="tryTOTP()">Use QR Code</button>
+    <div id="qrCodeContainer" class="hidden"></div>
+  </div>
+
+  <!-- QR Code OTP Screen -->
+  <div class="container" id="qrOtpScreen">
+    <button class="back-btn" onclick="goToOTP()">← Back</button>
+    <h1>Scan QR Code</h1>
+    <p>Scan the QR Code using your authenticator app and enter the 6-digit code below</p>
+    <div id="qrCodeContainerAlt"></div>
+    <input type="text" maxlength="6" placeholder="Enter code from app" id="qrOtpInput" />
+    <button class="btn" onclick="verifyTOTP()">Verify Code</button>
+    <p class="error-msg hidden" id="qrOtpError">Incorrect code, please try again.</p>
+  </div>
+
+  <!-- Phone OTP Screen -->
+  <div class="container" id="phoneOtpScreen">
+    <button class="back-btn" onclick="goToVerificationMethod()">← Back</button>
+    <h1>Phone Verification</h1>
+    <p>We've sent a 6-digit code to <strong id="phoneDisplay"></strong></p>
+    <div class="otp-input" id="phoneOtpInputs">
+      <input maxlength="1" />
+      <input maxlength="1" />
+      <input maxlength="1" />
+      <input maxlength="1" />
+      <input maxlength="1" />
+      <input maxlength="1" />
+    </div>
+    <p class="resend hidden">
+      Resend OTP in <span id="phoneTimer">30</span>s
+    </p>
+    <button class="btn" onclick="verifyPhoneOtp()">Verify</button>
+    <button class="btn hidden" id="resendPhoneOtpBtn" onclick="resendPhoneOtp()">Resend OTP</button>
+    <p class="error-msg hidden" id="phoneOtpError">Incorrect OTP, please try again.</p>
+    <button class="btn" id="voicecall" onclick="tryVoiceCall()">Use Voice Call</button>
+  </div>
+
+  <!-- Success Screen -->
+  <div class="container" id="successScreen">
+    <div class="icon success">✅</div>
+    <h1>Success!</h1>
+    <p>Authentication successful. You're now logged in.</p>
+    <button class="btn" onclick="goToSettings()">Continue to Dashboard</button>
+  </div>
+
+  <!-- Settings Screen -->
+  <div class="container" id="settingsScreen">
+    <h1 id="settingsEmail">Welcome, <span id="userName">User</span></h1>
+    <div class="profile-info">
+      <p><strong>Email:</strong> <span id="displayEmail"></span></p>
+      <p><strong>Phone:</strong> <span id="displayPhone"></span></p>
+    </div>
+    
+    <h3>One-Time Password (OTP) Authentication</h3>
+    <p>
+      One-Time Passwords (OTPs) are secure, randomly generated codes that are valid for only one login session or transaction. 
+      They are commonly used as an added layer of security to verify a user's identity.
+    </p>
+    <ul class="info-list">
+      <li>📩 OTPs can be sent to your email or phone</li>
+      <li>⏱️ Each OTP is valid for 1 minute only</li>
+      <li>🔁 You can request a new OTP every 30 seconds</li>
+      <li>🛡️ OTPs help prevent unauthorized access to your account</li>
+    </ul>
+    
+    <!-- Premium Subscription Section -->
+    <div class="premium-container">
+      <div class="premium-header">
+        <span class="premium-icon">⭐</span>
+        <h3>Upgrade to Premium</h3>
+      </div>
+      <p>Unlock advanced features with our premium subscription:</p>
+      <ul class="premium-features">
+        <li>Priority customer support</li>
+        <li>Unlimited OTP requests</li>
+        <li>Advanced security reports</li>
+        <li>Multi-device authentication</li>
+        <li>Backup recovery options</li>
+      </ul>
+      <div class="premium-price">₱499.00 / month</div>
+      <button class="premium-btn" onclick="showPurchaseModal()">Upgrade Now</button>
+    </div>
+    <button class="btn" onclick="logout()">Logout</button>
+  </div>
+
+  <!-- Purchase Modal -->
+  <div id="purchaseModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeModal()">&times;</span>
+      <h2>Complete Your Purchase</h2>
+      <p>You're upgrading to Premium for <strong>₱499.00 / month</strong></p>
+      <div class="payment-options">
+        <h3>Select Payment Method</h3>
+        <div class="payment-option" onclick="selectPaymentMethod('card')">
+          <img src="https://cdn-icons-png.flaticon.com/512/179/179457.png" alt="Card" class="payment-icon">
+          <div><h4>Credit/Debit Card</h4><p>Visa, Mastercard, AmEx</p></div>
+        </div>
+        <div class="payment-option" onclick="selectPaymentMethod('gcash')">
+          <img src="https://brandlogos.net/wp-content/uploads/2024/01/gcash-logo_brandlogos.net_kiaqh.png" alt="GCash" class="payment-icon">
+          <div><h4>GCash</h4><p>Pay via GCash</p></div>
+        </div>
+      </div>
+      <button class="confirm-purchase" onclick="initiatePurchaseOtp()">Confirm & Verify OTP</button>
+    </div>
+  </div>
+
+  <!-- OTP Verification Modal -->
+  <div id="otpModal" class="modal otp-modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeOtpModal()">&times;</span>
+      <h2>OTP Verification</h2>
+      <p>An OTP has been sent to your email. Enter it below to confirm purchase.</p>
+      <div class="otp-input" id="purchaseOtpInputs">
+        <input maxlength="1" />
+        <input maxlength="1" />
+        <input maxlength="1" />
+        <input maxlength="1" />
+        <input maxlength="1" />
+        <input maxlength="1" />
+      </div>
+      <div class="resend">
+        Resend OTP in <span id="purchaseTimer">30</span>s
+      </div>
+      <button class="confirm-purchase" onclick="verifyPurchaseOtp()">Verify OTP</button>
+      <button class="confirm-purchase hidden" id="resendPurchaseBtn" onclick="resendPurchaseOtp()">Resend OTP</button>
+      <p class="error-msg hidden" id="purchaseOtpError">Incorrect OTP. Please try again.</p>
+    </div>
+  </div>
+<script>
+    // Screen management
+    const screens = {
+    welcome: document.getElementById('welcomeScreen'),
+    register: document.getElementById('registerScreen'),
+    login: document.getElementById('loginScreen'),
+    verificationMethod: document.getElementById('verificationMethodScreen'),
+    emailOtp: document.getElementById('emailOtpScreen'),
+    phoneOtp: document.getElementById('phoneOtpScreen'),
+    success: document.getElementById('successScreen'),
+    qrOtp: document.getElementById('qrOtpScreen'),
+    settings: document.getElementById('settingsScreen'),
+    };
+
+    let selectedVerificationMethod = null;
+    let currentFlow = ''; // 'register' or 'login'
+    let emailTimer, phoneTimer;
+
+    // Utility functions
+    function showScreen(name) {
+    Object.values(screens).forEach(s => s.classList.remove('active'));
+    screens[name].classList.add('active');
+    }
+
+    function showLoading(button, show = true) {
+    if (show) {
+        button.dataset.originalText = button.textContent;
+        button.innerHTML = '<span class="spinner"></span> Loading...';
+        button.disabled = true;
+    } else {
+        button.textContent = button.dataset.originalText;
+        button.disabled = false;
+    }
+    }
+
+    function showError(elementId, message) {
+    const element = document.getElementById(elementId);
+    element.textContent = message;
+    element.classList.remove('hidden');
+    setTimeout(() => element.classList.add('hidden'), 5000);
+    }
+
+    // Navigation functions
+    function goToWelcome() {
+    showScreen('welcome');
+    }
+
+    function goToRegister() {
+    showScreen('register');
+    currentFlow = 'register';
+    }
+
+    function goToLogin() {
+    showScreen('login');
+    currentFlow = 'login';
+    }
+
+    function goToVerificationMethod() {
+    const email = localStorage.getItem('userEmail');
+    const phone = localStorage.getItem('userPhone');
+    
+    document.getElementById('emailVerificationText').textContent = email;
+    document.getElementById('phoneVerificationText').textContent = phone;
+    
+    showScreen('verificationMethod');
+    }
+
+    function goBackFromVerification() {
+    if (currentFlow === 'register') {
+        showScreen('register');
+    } else {
+        showScreen('login');
+    }
+    }
+
+    function selectVerificationMethod(method) {
+    selectedVerificationMethod = method;
+    document.querySelectorAll('.verification-method').forEach(m => m.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+    document.getElementById('proceedVerificationBtn').disabled = false;
+    }
+
+    function proceedWithVerification() {
+    if (!selectedVerificationMethod) return;
+    
+    if (selectedVerificationMethod === 'email') {
+        const email = localStorage.getItem('userEmail');
+        document.getElementById('emailDisplay').textContent = email;
+        showScreen('emailOtp');
+        startEmailTimer();
+        sendEmailOtp();
+    } else if (selectedVerificationMethod === 'phone') {
+        const phone = localStorage.getItem('userPhone');
+        document.getElementById('phoneDisplay').textContent = phone;
+        showScreen('phoneOtp');
+        startPhoneTimer();
+        sendPhoneOtp();
+    } else if (selectedVerificationMethod === 'totp') {
+        tryTOTP();
+    }
+    }
+
+    // Registration logic
+    function registerUser() {
+    const name = document.getElementById('registerName').value.trim();
+    const email = document.getElementById('registerEmail').value.trim();
+    const phone = document.getElementById('registerPhone').value.trim();
+    const password = document.getElementById('registerPassword').value;
+    const confirmPassword = document.getElementById('registerConfirmPassword').value;
+    const errorElement = document.getElementById('registerError');
+
+    // Validation
+    if (!name || !email || !phone || !password || !confirmPassword) {
+        showError('registerError', 'All fields are required');
+        return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showError('registerError', 'Please enter a valid email address');
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        showError('registerError', 'Passwords do not match');
+        return;
+    }
+
+    if (password.length < 8) {
+        showError('registerError', 'Password must be at least 8 characters');
+        return;
+    }
+
+    // Store user data
+    localStorage.setItem('userName', name);
+    localStorage.setItem('userEmail', email);
+    localStorage.setItem('userPhone', phone);
+    
+    // Proceed to verification method selection
+    goToVerificationMethod();
+    }
+    // Toggle password visibility
+    function togglePassword(id) {
+      const input = document.getElementById(id);
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+    // Login logic
+    function loginUser() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const btn = event.target;
+
+    if (!email || !password) {
+        showError('loginError', 'Email and password are required');
+        return;
+    }
+
+    showLoading(btn);
+    
+    // In a real app, you would verify credentials with your backend first
+    // For this demo, we'll just store the email and proceed to verification
+    localStorage.setItem('userEmail', email);
+    showLoading(btn, false);
+    
+    // Proceed to verification method selection
+    goToVerificationMethod();
+    }
+
+    // Email OTP functions
+    function sendEmailOtp() {
+    const email = localStorage.getItem('userEmail');
+    const btn = document.querySelector('#emailOtpScreen .btn');
+    
+    showLoading(btn);
+    
+    fetch('/send_email_otp', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ email })
+    })
+    .then(response => {
+        showLoading(btn, false);
+        if (!response.ok) throw new Error('Failed to send email OTP');
+    })
+    .catch(error => {
+        showLoading(btn, false);
+        showError('emailOtpError', error.message);
+    });
+    }
+
+    function verifyEmailOtp() {
+    const otp = Array.from(document.querySelectorAll('#emailOtpInputs input')).map(i => i.value).join('');
+    const email = localStorage.getItem('userEmail');
+    const btn = event.target;
+    
+    showLoading(btn);
+    
+    fetch('/verify_email_otp', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ email, otp })
+    })
+    .then(response => response.json())
+    .then(data => {
+        showLoading(btn, false);
+        if (data.message) {
+        localStorage.setItem('authToken', data.token);
+        showScreen('success');
+        } else {
+        showError('emailOtpError', data.error || 'Incorrect OTP');
+        }
+    })
+    .catch(error => {
+        showLoading(btn, false);
+        showError('emailOtpError', 'Verification failed');
+    });
+    }
+
+    // Phone OTP functions
+    function sendPhoneOtp() {
+        const phone = localStorage.getItem('userPhone');
+        const btn = document.querySelector('#phoneOtpScreen .btn');
+        const channel = "sms";
+        showLoading(btn);
+        
+        fetch('/send_phone_otp', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ phone, channel })
+        })
+        .then(response => response.json())
+        .then(data => {
+            showLoading(btn, false);
+            if (!data.status) throw new Error(data.error || 'Failed to send phone OTP');
+        })
+        .catch(error => {
+            showLoading(btn, false);
+            showError('phoneOtpError', error.message);
+        });
+    }
+
+    function verifyPhoneOtp() {
+    const otp = Array.from(document.querySelectorAll('#phoneOtpInputs input')).map(i => i.value).join('');
+    const phone = localStorage.getItem('userPhone');
+    const btn = event.target;
+    
+    showLoading(btn);
+    
+    fetch('/verify_phone_otp', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ phone, code: otp })
+    })
+    .then(response => response.json())
+    .then(data => {
+        showLoading(btn, false);
+        if (data.status === 'approved') {
+        localStorage.setItem('authToken', `tok_${Math.floor(Math.random() * 9000) + 1000}`);
+        showScreen('success');
+        } else {
+        showError('phoneOtpError', data.error || 'Incorrect OTP');
+        }
+    })
+    .catch(error => {
+        showLoading(btn, false);
+        showError('phoneOtpError', 'Verification failed');
+    });
+    }
+    function tryVoiceCall() {
+        const phone = localStorage.getItem('userPhone');
+        const btn = document.querySelector('#phoneOtpScreen .btn');
+        const channel = "call";
+        showLoading(btn);
+        
+        fetch('/send_phone_otp', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ phone, channel })
+        })
+        .then(response => response.json())
+        .then(data => {
+            showLoading(btn, false);
+            if (!data.status) throw new Error(data.error || 'Failed to send phone OTP');
+        })
+        .catch(error => {
+            showLoading(btn, false);
+            showError('phoneOtpError', error.message);
+        });
+    }
+   // TOTP / QR Code
+    function tryTOTP() {
+        showScreen('qrOtp');
+        const container = document.getElementById('qrCodeContainerAlt');
+        container.classList.remove('hidden'); container.innerHTML = '';
+        const canvas = document.createElement('canvas'); container.appendChild(canvas);
+        const email = localStorage.getItem('userEmail');
+        fetch(`/generate_otp_qr?email=${encodeURIComponent(email)}`)
+            .then(r=>r.json()).then(d=>QRCode.toCanvas(canvas, d.otp_uri));
+    }
+    function verifyTOTP() {
+    const email = localStorage.getItem('userEmail');
+    const code = document.getElementById('qrOtpInput').value;
+    const btn = event.target;
+    
+    showLoading(btn);
+    
+    fetch('/verify_totp', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ email, code })
+    })
+    .then(response => response.json())
+    .then(data => {
+        showLoading(btn, false);
+        if (data.message) {
+        localStorage.setItem('authToken', data.token);
+        showScreen('success');
+        } else {
+        showError('qrOtpError', data.error || 'Invalid TOTP code');
+        }
+    })
+    .catch(error => {
+        showLoading(btn, false);
+        showError('qrOtpError', 'Verification failed');
+    });
+    }
+
+    // Timer functions
+    function startEmailTimer() {
+    clearInterval(emailTimer);
+    let timeLeft = 30;
+    document.getElementById('emailTimer').textContent = timeLeft;
+    document.querySelector('#emailOtpScreen .resend').classList.remove('hidden');
+    document.getElementById('resendEmailOtpBtn').classList.add('hidden');
+    
+    emailTimer = setInterval(() => {
+        timeLeft--;
+        document.getElementById('emailTimer').textContent = timeLeft;
+        
+        if (timeLeft <= 0) {
+        clearInterval(emailTimer);
+        document.querySelector('#emailOtpScreen .resend').classList.add('hidden');
+        document.getElementById('resendEmailOtpBtn').classList.remove('hidden');
+        }
+    }, 1000);
+    }
+
+    function startPhoneTimer() {
+    clearInterval(phoneTimer);
+    let timeLeft = 60;
+    document.getElementById('phoneTimer').textContent = timeLeft;
+    document.querySelector('#phoneOtpScreen .resend').classList.remove('hidden');
+    document.getElementById('resendPhoneOtpBtn').classList.add('hidden');
+    
+    phoneTimer = setInterval(() => {
+        timeLeft--;
+        document.getElementById('phoneTimer').textContent = timeLeft;
+        
+        if (timeLeft <= 0) {
+        clearInterval(phoneTimer);
+        document.querySelector('#phoneOtpScreen .resend').classList.add('hidden');
+        document.getElementById('resendPhoneOtpBtn').classList.remove('hidden');
+        }
+    }, 1000);
+    }
+
+    function resendEmailOtp() {
+    clearInterval(emailTimer);
+    sendEmailOtp();
+    startEmailTimer();
+    }
+
+    function resendPhoneOtp() {
+    clearInterval(phoneTimer);
+    sendPhoneOtp();
+    startPhoneTimer();
+    }
+
+    // Dashboard & Logout
+    function goToSettings() {
+    showScreen('settings');
+    const name = localStorage.getItem('userName') || 'User';
+    const email = localStorage.getItem('userEmail');
+    const phone = localStorage.getItem('userPhone') || 'Not provided';
+    
+    document.getElementById('userName').textContent = name;
+    document.getElementById('displayEmail').textContent = email;
+    document.getElementById('displayPhone').textContent = phone;
+    }
+
+    function logout() {
+    // Clear inputs
+    document.querySelectorAll('input').forEach(i => i.value = '');
+    
+    // Clear storage
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userPhone');
+    
+    goToWelcome();
+    }
+
+    // Initialize app
+    function checkLoginStatus() {
+    if (localStorage.getItem('authToken') && localStorage.getItem('userEmail')) {
+        goToSettings();
+    } else {
+        goToWelcome();
+    }
+    }
+
+    function initializeOTPInputs() {
+    document.querySelectorAll('.otp-input').forEach(otpContainer => {
+        const inputs = otpContainer.querySelectorAll('input');
+        inputs.forEach((input, index) => {
+        input.addEventListener('input', () => {
+            if (input.value.length === 1 && index < inputs.length - 1) {
+            inputs[index + 1].focus();
+            }
+        });
+        
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !input.value && index > 0) {
+            inputs[index - 1].focus();
+            }
+        });
+        });
+    });
+    }
+    // Premium purchase logic
+    const purchaseModal = document.getElementById('purchaseModal');
+    const otpModal = document.getElementById('otpModal');
+    let selectedPaymentMethod, purchaseTimer;
+
+    function showPurchaseModal() {
+    selectedPaymentMethod = null;
+    purchaseModal.style.display = 'block';
+    document.querySelectorAll('.payment-option').forEach(o=>o.classList.remove('selected'));  
+    }
+    function closeModal() { purchaseModal.style.display='none'; }
+    function showOtpModal() { otpModal.style.display='block'; }
+    function closeOtpModal() { clearInterval(purchaseTimer); otpModal.style.display='none'; }
+
+    function selectPaymentMethod(method) {
+    selectedPaymentMethod = method;
+    document.querySelectorAll('.payment-option').forEach(o=>o.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+    }
+
+    function initiatePurchaseOtp() {
+    if (!selectedPaymentMethod) return alert('Select a payment method');
+    const email = localStorage.getItem('userEmail');
+    fetch('/send_purchase_otp', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ email, method: selectedPaymentMethod })
+    }).then(res=>{
+        if (res.ok) {
+        closeModal(); startPurchaseTimer(); showOtpModal();
+        } else alert('Failed to initiate purchase');
+    });
+    }
+
+    function startPurchaseTimer() {
+    clearInterval(purchaseTimer);
+    let timeLeft = 30;
+    document.getElementById('purchaseTimer').textContent = timeLeft;
+    document.querySelector('#otpModal .resend').style.display='block';
+    document.getElementById('resendPurchaseBtn').classList.add('hidden');
+    purchaseTimer = setInterval(()=>{
+        timeLeft--; document.getElementById('purchaseTimer').textContent = timeLeft;
+        if (timeLeft<=0) {
+        clearInterval(purchaseTimer);
+        document.querySelector('#otpModal .resend').style.display='none';
+        document.getElementById('resendPurchaseBtn').classList.remove('hidden');
+        }
+    },1000);
+    }
+
+    function verifyPurchaseOtp() {
+    const otp = Array.from(document.querySelectorAll('#purchaseOtpInputs input')).map(i=>i.value).join('');
+    const email = localStorage.getItem('userEmail');
+    fetch('/verify_purchase_otp', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email, otp })
+    }).then(r=>r.json()).then(data=>{
+        if (data.success) {
+        closeOtpModal();
+        document.querySelector('.premium-container').innerHTML =
+            `<div style="text-align:center;padding:20px;">
+            <div style="font-size:48px;color:#ffc107;">⭐</div>
+            <h3>Premium Member</h3>
+            <p>Thank you for your subscription!</p>
+            </div>`;
+        alert('Purchase successful! You are now Premium.');
+        } else {
+        document.getElementById('purchaseOtpError').classList.remove('hidden');
+        }
+    });
+    }
+
+    function resendPurchaseOtp() {
+    clearInterval(purchaseTimer);
+    initiatePurchaseOtp();
+    }
+
+    // Modal outside click handlers
+    window.onclick = e => {
+    if (e.target == purchaseModal) closeModal();
+    if (e.target == otpModal) closeOtpModal();
+    };
+    // Start the application
+    window.onload = () => { 
+    checkLoginStatus();
+    initializeOTPInputs();
+    };
+</script>
+</body>
+</html>
