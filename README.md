@@ -55,15 +55,15 @@ Enter your email address
 Click "Send OTP"
 
 ### 3. OTP Verification
-Enter the 6-digit code sent to your email or phone
-OTP expires in 1 minutes
-Can resend OTP after 30 seconds
+Enter the 6-digit code sent to your email or phonev  
+OTP expires in 1 minutes  
+Can resend OTP after 30 seconds  
 
 ### 4. Success Screen
-Authentication successful
+Authentication successful  
 Continue to dashboard
 
 ### 5. Home Screen
-View description about otp
-Logout option
-Purchase Subscription
+View description about otp  
+Logout option  
+Purchase Subscription  
