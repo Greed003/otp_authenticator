@@ -50,14 +50,16 @@ Open your browser and navigate to: http://localhost:5000
 ### 1. Welcome Screen
 Click "Get Started" to begin
 
-### 2. Email Input
-Enter your email address
-Click "Send OTP"
+### 2. Registration Input
+Enter all coressponding placeholder
+Click "Register"
 
 ### 3. OTP Verification
-Enter the 6-digit code sent to your email or phone  
+Choose which one to verify either phone or email  
+Enter the 6-digit code being sent to you  
+Can choose other option such as qrcode and voice call  
 OTP expires in 1 minutes  
-Can resend OTP after 30 seconds  
+Can resend OTP after 30 seconds   
 
 ### 4. Success Screen
 Authentication successful  
