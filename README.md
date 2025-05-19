@@ -55,7 +55,7 @@ Enter your email address
 Click "Send OTP"
 
 ### 3. OTP Verification
-Enter the 6-digit code sent to your email or phonev  
+Enter the 6-digit code sent to your email or phone  
 OTP expires in 1 minutes  
 Can resend OTP after 30 seconds  
 
